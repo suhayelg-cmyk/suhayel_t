@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S Telecom - POS</title>
+    <style>
+        :root { --bg: #000; --card: #1c1c1e; --text: #fff; --green: #34c759; --blue: #007aff; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; }
+        .container { max-width: 500px; margin: auto; }
+        .card { background: var(--card); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #333; }
+        h2 { text-align: center; color: var(--green); margin-top: 0; }
+        input, select, button { width: 100%; padding: 14px; margin-top: 10px; border-radius: 10px; border: none; font-size: 16px; box-sizing: border-box; }
+        input { background: #2c2c2e; color: #fff; border: 1px solid #3a3a3c; }
+        button { background: var(--green); color: #fff; font-weight: bold; cursor: pointer; }
+        .sell-btn { background: var(--blue); }
+        .dashboard { display: flex; gap: 10px; margin-bottom: 20px; }
+        .dash-item { flex: 1; background: var(--card); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #333; }
+        .profit { color: var(--green); font-weight: bold; }
+        .loss { color: #ff3b30; font-weight: bold; }
+        .report-item { background: var(--card); padding: 15px; border-radius: 10px; margin-top: 10px; border-left: 5px solid var(--green); font-size: 14px; }
+        .reset { background: #333; font-size: 12px; margin-top: 30px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>S Telecom</h2>
+    
+    <div class="dashboard">
+        <div class="dash-item">আজকের বিক্রি<br><span id="tSales">0</span></div>
+        <div class="dash-item">আজকের লাভ<br><span id="tProfit" class="profit">0</span></div>
+    </div>
+
+    <!-- স্টক এন্ট্রি -->
+    <div class="card">
+        <h4 style="margin:0">১. মাল স্টকে যোগ করুন</h4>
+        <input type="text" id="itemName" placeholder="মালের নাম (যেমন: Vivo Display)">
+        <input type="number" id="buyPrice" placeholder="কেনা দাম (Buy Price)">
+        <button onclick="addStock()">স্টকে রাখুন</button>
+    </div>
+
+    <!-- বিক্রি এন্ট্রি -->
+    <div class="card" style="border-color: var(--blue);">
+        <h4 style="margin:0">২. মাল বিক্রি করুন</h4>
+        <select id="stockList"><option value="">মাল সিলেক্ট করুন</option></select>
+        <input type="number" id="sellPrice" placeholder="বিক্রি দাম (আপনি চাইলে কমিয়ে লিখুন)">
+        <button class="sell-btn" onclick="sellItem()">বিক্রি কনফার্ম</button>
+    </div>
+
+    <h3>বিক্রয় রিপোর্ট</h3>
+    <div id="history"></div>
+
+    <button class="reset" onclick="resetAll()">Reset (সব হিসাব মুছুন)</button>
+</div>
+
+<script>
+    let stocks = JSON.parse(localStorage.getItem('st_stocks')) || [];
+    let sales = JSON.parse(localStorage.getItem('st_sales')) || [];
+
+    function addStock() {
+        const name = document.getElementById('itemName').value;
+        const buy = parseFloat(document.getElementById('buyPrice').value);
+        if(name && buy) {
+            stocks.push({name, buy});
+            save();
+            document.getElementById('itemName').value = '';
+            document.getElementById('buyPrice').value = '';
+            alert("স্টকে যোগ হয়েছে!");
+        }
+    }
+
+    function sellItem() {
+        const idx = document.getElementById('stockList').value;
+        const sell = parseFloat(document.getElementById('sellPrice').value);
+        if(idx !== "" && sell) {
+            const item = stocks[idx];
+            const profit = sell - item.buy;
+            sales.unshift({name: item.name, buy: item.buy, sell: sell, profit: profit});
+            save();
+            document.getElementById('sellPrice').value = '';
+            alert("বিক্রি সফল!");
+        }
+    }
+
+    function save() {
+        localStorage.setItem('st_stocks', JSON.stringify(stocks));
+        localStorage.setItem('st_sales', JSON.stringify(sales));
+        render();
+    }
+
+    function render() {
+        const list = document.getElementById('stockList');
+        list.innerHTML = '<option value="">মাল সিলেক্ট করুন</option>';
+        stocks.forEach((s, i) => list.innerHTML += `<option value="${i}">${s.name} (${s.buy})</option>`);
+
+        const hist = document.getElementById('history');
+        hist.innerHTML = '';
+        let totalS = 0, totalP = 0;
+        sales.forEach(s => {
+            totalS += s.sell; totalP += s.profit;
+            hist.innerHTML += `<div class="report-item"><b>${s.name}</b><br>কেনা: ${s.buy} | বিক্রি: ${s.sell}<br>লাভ: <span class="${s.profit>=0?'profit':'loss'}">${s.profit}</span></div>`;
+        });
+        document.getElementById('tSales').innerText = totalS;
+        document.getElementById('tProfit').innerText = totalP;
+    }
+
+    function resetAll() { if(confirm("সব হিসাব মুছবেন?")) { localStorage.clear(); location.reload(); } }
+    render();
+</script>
+</body>
+</html>
